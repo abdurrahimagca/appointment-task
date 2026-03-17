@@ -2,6 +2,8 @@ services:
   db:
     container_name: ${POSTGRES_HOST:-appointment-db}
     image: postgres:16-alpine
+    networks:
+      - appointment
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-appointment}
       POSTGRES_USER: ${POSTGRES_USER:-appointment}
@@ -19,6 +21,8 @@ services:
 
   db-migrate:
     image: postgres:16-alpine
+    networks:
+      - appointment
     depends_on:
       db:
         condition: service_healthy
@@ -39,6 +43,8 @@ services:
     image: ${COMPOSE_PROJECT_NAME:-appointment}-api:${IMAGE_TAG:-latest}
     build:
       context: ./services/api
+    networks:
+      - appointment
     depends_on:
       db:
         condition: service_healthy
@@ -57,8 +63,6 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       RESEND_FROM_NAME: ${RESEND_FROM_NAME:-Appointment}
-    ports:
-      - "${API_PORT:-8080}:8080"
 
   web:
     container_name: appointment-web
@@ -68,10 +72,17 @@ services:
       args:
         VITE_API_BASE_URL: /api
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+    networks:
+      - appointment
     depends_on:
       - api
     ports:
       - "${WEB_PORT:-3000}:80"
+
+networks:
+  appointment:
+    driver: bridge
+    driver: bridge
 
 volumes:
   postgres_data:
