@@ -6,6 +6,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/abdurrahimagca/appointment-task/internal/environment"
 	localerrors "github.com/abdurrahimagca/appointment-task/internal/errors"
@@ -45,14 +47,18 @@ func (s *service) Verify(ctx context.Context, token string) (bool, error) {
 		return false, huma.Error400BadRequest("turnstileToken is required")
 	}
 
-	url := "https://challenges.cloudflare.com/turnstile/v0/siteverify?secret=" + s.secret + "&response=" + token
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	form := url.Values{
+		"secret":   {s.secret},
+		"response": {token},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://challenges.cloudflare.com/turnstile/v0/siteverify", nil)
 	if err != nil {
 		return false, localerrors.Wrapf(err, "create turnstile request")
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Body = io.NopCloser(strings.NewReader(form.Encode()))
 
-	client := http.Client{}
-	response, err := client.Do(req)
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return false, localerrors.Wrapf(err, "execute turnstile request")
 	}
