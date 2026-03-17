@@ -61,13 +61,14 @@ begin
 end;
 $$;
 
+drop trigger if exists appointments_mark_slot_booked on appointments;
 create trigger appointments_mark_slot_booked
 after insert on appointments
 for each row
 execute function mark_slot_booked_after_appointment();
 
-create index on slots (provider_id);
-create index on slots (provider_id, is_free_slot, start_time, id);
-create index on appointments (slot_id);
-create index on appointment_participants (appointment_id);
-create index on appointment_participants (client_id);
+create index if not exists slots_provider_id_idx on slots (provider_id);
+create index if not exists slots_provider_id_free_start_idx on slots (provider_id, is_free_slot, start_time, id);
+create index if not exists appointments_slot_id_idx on appointments (slot_id);
+create index if not exists appointment_participants_appointment_id_idx on appointment_participants (appointment_id);
+create index if not exists appointment_participants_client_id_idx on appointment_participants (client_id);
