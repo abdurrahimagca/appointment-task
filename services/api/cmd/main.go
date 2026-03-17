@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/abdurrahimagca/appointment-task/internal/appointment"
 	"github.com/abdurrahimagca/appointment-task/internal/environment"
@@ -31,6 +32,18 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	for i := range 30 {
+		if err := pool.Ping(context.Background()); err == nil {
+			break
+		} else if i == 29 {
+			logger.Error("database not reachable after 30 attempts", "error", err)
+			os.Exit(1)
+		} else {
+			logger.Warn("waiting for database", "attempt", i+1, "error", err)
+			time.Sleep(time.Second)
+		}
+	}
 
 	router := http.NewServeMux()
 	config := huma.DefaultConfig("Appointment API", env.APIVersion)

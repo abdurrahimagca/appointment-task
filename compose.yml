@@ -1,5 +1,6 @@
 services:
   db:
+    container_name: ${POSTGRES_HOST:-appointment-db}
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-appointment}
@@ -22,7 +23,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGHOST: db
+      PGHOST: ${POSTGRES_HOST:-db}
       PGUSER: ${POSTGRES_USER:-appointment}
       PGPASSWORD: ${POSTGRES_PASSWORD:-appointment}
       PGDATABASE: ${POSTGRES_DB:-appointment}
@@ -38,10 +39,12 @@ services:
     build:
       context: ./services/api
     depends_on:
+      db:
+        condition: service_healthy
       db-migrate:
         condition: service_completed_successfully
     environment:
-      DB_URL: postgres://${POSTGRES_USER:-appointment}:${POSTGRES_PASSWORD:-appointment}@db:5432/${POSTGRES_DB:-appointment}?sslmode=disable
+      DB_URL: postgres://${POSTGRES_USER:-appointment}:${POSTGRES_PASSWORD:-appointment}@${POSTGRES_HOST:-db}:5432/${POSTGRES_DB:-appointment}?sslmode=disable
       API_VERSION: ${API_VERSION:-0.0.1}
       PORT: 8080
       LOG_LEVEL: ${LOG_LEVEL:-debug}
